@@ -121,6 +121,7 @@ public class UserServiceImpl implements UserService {
         if(!ObjectUtils.isEmpty(usersEntity.getPhoneNumber()) && usersModule.expPhoneNum(usersEntity.getPhoneNumber())){
             usersDto.setDecodePhoneNumber(aes256Cipher.AES_Decode(usersEntity.getPhoneNumber()));
         }
+
         usersDto.setJwtAccessToken(signInModule.createAccessToken(usersEntity));
 
         return result;
