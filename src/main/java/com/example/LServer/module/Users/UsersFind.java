@@ -18,4 +18,8 @@ public class UsersFind {
     public UsersEntity getUserByEncodePhoneNumber(String phoneNumber){
         return usersRepository.findUsersByPhoneNumber(phoneNumber);
     }
+
+    public UsersEntity getUserByUserToken(String userToken){
+        return usersRepository.findUsersByUserToken(userToken);
+    }
 }

@@ -1,6 +1,7 @@
 package com.example.LServer.module.common;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -79,10 +80,11 @@ public class PhoneNumberUtil {
      */
     public boolean isValidBase64Phone(String encodedPhone) {
         try {
-            // Base64 디코딩 시도
-            Base64.Decoder decoder = Base64.getDecoder();
-            byte[] decodedBytes = decoder.decode(encodedPhone);
-            String phone = new String(decodedBytes);
+            // URL-safe Base64 디코딩
+            Base64.Decoder decoder = Base64.getUrlDecoder();
+            byte[] decodedBytes = decoder.decode(encodedPhone.trim());
+            // UTF-8로 디코딩
+            String phone = new String(decodedBytes, StandardCharsets.UTF_8);
             return validPhoneNumber(phone);
         } catch (IllegalArgumentException e) {
             // Base64 디코딩에 실패한 경우

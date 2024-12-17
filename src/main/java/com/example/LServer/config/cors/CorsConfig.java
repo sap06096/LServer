@@ -5,7 +5,10 @@ import com.example.LServer.repository.system.AllowedOriginRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -19,51 +22,49 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CorsConfig {
 
-    private final AllowedOriginRepository allowedOriginRepository;
-    private CorsConfiguration corsConfiguration;
+    private final AllowedOriginRepository allowedOriginRepository; // DB에서 Origin 목록을 가져오는 Repository
 
-    // CORS Filter 설정
     @Bean
-    public CorsFilter corsFilter() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", buildConfig());  // 모든 엔드포인트에 대해 CORS 설정 적용
-        return new CorsFilter(source);
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        // CORS 및 CSRF 설정
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정 추가
+
+                // CSRF 비활성화 (특히 POST 요청의 경우 CSRF를 비활성화할 수 있습니다)
+                .csrf(csrf -> csrf.disable())
+
+                // 모든 요청 허용 (테스트 환경용)
+                .authorizeHttpRequests(authorizeRequest ->
+                        authorizeRequest.anyRequest().permitAll()
+                );
+
+        return http.build();
     }
 
-    // CORS Configuration을 반환하는 메서드
-    public CorsConfiguration buildConfig() {
-        // DB에서 허용된 출처 목록을 가져옵니다.
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        // DB에서 허용된 Origin 목록 가져오기
         List<String> allowedOrigins = allowedOriginRepository.findAllByUse(true).stream()
                 .map(AllowedOriginEntity::getOrigin)
                 .collect(Collectors.toList());
 
-        System.out.print(allowedOrigins);
-        CorsConfiguration corsConfig = new CorsConfiguration();
-        // Spring Boot 3.x에서 권장하는 방식: allowedOriginPatterns 사용
-        corsConfig.setAllowedOriginPatterns(allowedOrigins);  // 모든 origin을 패턴으로 처리
-        corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
-        corsConfig.setAllowedHeaders(Arrays.asList(
-                "X-Requested-With", "Origin", "Content-Type", "Accept",
-                "Authorization", "Access-Control-Allow-Credentials", "Access-Control-Allow-Headers",
-                "Access-Control-Allow-Methods", "Access-Control-Allow-Origin", "Access-Control-Expose-Headers",
-                "Access-Control-Max-Age", "Access-Control-Request-Headers", "Access-Control-Request-Method",
-                "Age", "Allow", "Alternates", "Content-Range", "Content-Disposition", "Content-Description"));
-        corsConfig.setAllowCredentials(true);  // 인증 정보 허용
-        corsConfig.setMaxAge(3600L);  // 1시간 동안 캐시
+        CorsConfiguration configuration = getCorsConfiguration(allowedOrigins);
 
-        return corsConfiguration = corsConfig;
+        // URL 기반 CORS 설정 적용
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
 
-    public CorsConfiguration getCorsConfiguration() { return corsConfiguration; }
-
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-
-                registry.addMapping("/**").combine(buildConfig());
-            }
-        };
+    private static CorsConfiguration getCorsConfiguration(List<String> allowedOrigins) {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(allowedOrigins); // 허용된 Origin 목록 설정
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")); // 허용된 HTTP 메서드
+        configuration.setAllowedHeaders(Arrays.asList(
+                "X-Requested-With", "Origin", "Content-Type", "Accept", "Authorization"
+        )); // 허용된 Header
+        configuration.setAllowCredentials(true); // 인증 정보 허용
+        configuration.setMaxAge(3600L); // Pre-flight 요청 캐시 시간 (1시간)
+        return configuration;
     }
 }

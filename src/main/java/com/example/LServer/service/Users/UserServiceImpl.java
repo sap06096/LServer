@@ -7,6 +7,7 @@ import com.example.LServer.model.Users.UserAccountEntity;
 import com.example.LServer.model.Users.UsersEntity;
 import com.example.LServer.module.Security.AES256Cipher;
 import com.example.LServer.module.Users.*;
+import com.example.LServer.module.common.Generics;
 import com.example.LServer.module.common.PhoneNumberUtil;
 import com.example.LServer.module.common.ResultUtil;
 import com.example.LServer.repository.Users.UserAccountRepository;
@@ -14,13 +15,17 @@ import com.example.LServer.repository.Users.UsersRepository;
 import io.micrometer.observation.annotation.Observed;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import net.bytebuddy.description.type.TypeDescription.Generic;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,6 +60,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public Map<String, Object> createUser(UsersDto dto) throws Exception{
         Map<String, Object> result = new HashMap<>();
 
@@ -103,7 +109,8 @@ public class UserServiceImpl implements UserService {
                         .type(UserAccountType.USER_ACCOUNT_TYPE_USERS)
                         .build());
             }catch (Exception e){
-                throw new Exception(e.getMessage());
+                e.printStackTrace();
+                throw new Exception("회원 계쩡 새성 중 오류 발생" + e.getMessage());
             }
 
             if(ObjectUtils.isEmpty(usersAccount)){
@@ -123,6 +130,10 @@ public class UserServiceImpl implements UserService {
         }
 
         usersDto.setJwtAccessToken(signInModule.createAccessToken(usersEntity));
+
+        result.put("result", 0);
+        result.put("desc", "회원가입이 성공적으로 처리되었습니다.");
+        result.put("usersDto", usersDto);
 
         return result;
     }
@@ -155,6 +166,38 @@ public class UserServiceImpl implements UserService {
             return null;
         }
         return desc;
+    }
+
+    @Override
+    public UsersDto getUserByLoginIdAndPwd(UsersDto dto) throws Exception{
+
+        if(ObjectUtils.isEmpty(dto.getLoginId()) || ObjectUtils.isEmpty(dto.getLoginPwd())){
+            throw new Exception("아이디 혹은 비밀번호가 없습니다.");
+        }
+
+        UsersEntity entity = usersFindModule.getUserByLoginId(dto.getLoginId());
+        boolean isUser = false;
+
+        if(entity != null){
+            BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+            if(!bCryptPasswordEncoder.matches(dto.getLoginPwd(), entity.getLoginPwd())){
+                throw new Exception("비밀번호가 올바르지 않습니다.");
+            }
+        }else{
+            throw new Exception("유저 정보가 존재하지 않습니다.");
+        }
+
+        return UsersDto.builder().build().toDto(entity);
+    }
+
+    public UsersDto getUserByUserToken(String userToken) throws Exception {
+
+        UsersEntity usersEntity = usersFindModule.getUserByUserToken(userToken);
+        if(usersEntity == null){
+            throw new Exception("유저 정보가 존재하지 않습니다. 로그인을 시도해주세요.");
+        }
+
+        return UsersDto.builder().build().toDto(usersEntity);
     }
 
 }
