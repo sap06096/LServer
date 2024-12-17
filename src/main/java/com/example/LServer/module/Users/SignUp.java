@@ -6,7 +6,6 @@ import com.example.LServer.item.Users.UsersDto;
 import com.example.LServer.model.Users.UsersEntity;
 import com.example.LServer.repository.Users.UsersRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
@@ -39,6 +38,11 @@ public class SignUp {
         if(ObjectUtils.isEmpty(usersEntity)){
             usersEntity = UsersEntity.builder()
                     .regDate(LocalDateTime.now())
+                    .age(usersDto.getAge())
+                    .name(usersDto.getName())
+                    .email(usersDto.getEmail())
+                    .gender(usersDto.getGender())
+                    .phoneNumber(usersDto.getEncodePhoneNumber())
                     .userToken(usersModule.createUserToken(usersDto.getPhoneNumber()))
                     .status(UserStatus.USER_STATUS_ACTIVE)
                     .build();
