@@ -49,7 +49,7 @@ public class UsersController {
         }catch (Exception e) {
             throw new Exception(e.getMessage());
         }
-
+        
         return ResponseEntity.ok().body(result);
     }
 
@@ -58,7 +58,7 @@ public class UsersController {
     public ResponseEntity loginUser(@RequestBody @Valid UsersDto dto) throws Exception{
 
         Map<String, Object> result = Generics.newHashMap();
-
+        
         try{
             UsersDto usersDto = userService.getUserByLoginIdAndPwd(dto);
             
@@ -66,34 +66,32 @@ public class UsersController {
                 result.put("result", -1);
                 result.put("desc", "로그인을 실패하였습니다.");
             }
-
+            
             result.put("data", usersDto);
-
+            
         }catch(Exception e){
             result.put("result", -1);
             result.put("desc", e.getMessage());
             return ResponseEntity.ok().body(result);
         }
-
+        
         result.put("result", 0);
         result.put("desc", "성공적으로 가져왔습니다.");        
-
+        
         return ResponseEntity.ok().body(result);
     }
     
     @GetMapping("/user/userToken")
-    @ApiOperation(value = "US_TK로 유저정보 추출")
-    public ResponseEntity getUserByUserToken(@RequestHeader("Authorization") String authToken){
+    @ApiOperation(value = "userToken으로 유저정보 추출")
+    public ResponseEntity getUserByUserToken(@RequestParam("userToken") String userToken){
         Map<String, Object> result = Generics.newHashMap();
-
-        String userToken = authToken.replace("Bearer ", "");
-
+        
         if(!StringUtils.hasLength(userToken)){
             result.put("result", -1);
             result.put("desc", "accessToken is null");
             return new ResponseEntity(result, HttpStatus.OK);
         }
-
+    
         try{
             UsersDto usersDto = userService.getUserByUserToken(userToken);
             if(!ObjectUtils.isEmpty(usersDto)){
@@ -102,11 +100,10 @@ public class UsersController {
                 result.put("data", usersDto);
             }
         }catch(Exception e){
-            result.put("result", -1);
+            result.put("result", -1); 
             result.put("desc", e.getMessage());
         }
-
+        
         return new ResponseEntity(result, HttpStatus.OK);
-    } 
-
+    }
 }

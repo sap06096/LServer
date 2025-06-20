@@ -10,9 +10,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +33,7 @@ public class CorsConfig {
                 .authorizeHttpRequests(authorizeRequest ->
                         authorizeRequest.anyRequest().permitAll()
                 );
-
+                
         return http.build();
     }
 
@@ -46,6 +43,9 @@ public class CorsConfig {
         List<String> allowedOrigins = allowedOriginRepository.findAllByUse(true).stream()
                 .map(AllowedOriginEntity::getOrigin)
                 .collect(Collectors.toList());
+
+        System.out.println("허용된 Origin 목록: " + allowedOrigins);
+
 
         CorsConfiguration configuration = getCorsConfiguration(allowedOrigins);
 

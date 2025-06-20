@@ -199,5 +199,4 @@ public class UserServiceImpl implements UserService {
 
         return UsersDto.builder().build().toDto(usersEntity);
     }
-
 }
